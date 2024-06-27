@@ -1,0 +1,1022 @@
+---
+title: "Diamonds Report"
+author: "Javier Garcia"
+date: "June 14, 2024"
+output:
+  pdf_document:
+    latex_engine: xelatex
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(skimr)
+```
+
+
+
+# Introduction
+
+
+Presently, diamonds have a great influence in global mainstream culture. People buy diamonds for many reasons whether it be for appearance or status. There are many qualities of diamonds that factor into its size, appearance, and price. In this report, we will explore the relationships between certain qualities of diamonds in 2022, such qualities being categorical or independent quantities.
+
+In the first section of this report, we explore and interpret our data set, providing detailed. In the second section, we develop and analyze a Simple Linear Regression model for two variables in our data set. Ultimately, in the third section we analyze a Multiple Linear Regression model obtained from the second section, and develop the best model for our data.
+
+
+# Data Description and Descriptive Statistics
+
+
+```{r, echo=FALSE}
+diamonds <- read.csv("SD500_JG.csv")
+diamonds_df <- diamonds[,-1]
+skim(diamonds_df)
+```
+```{r, include=FALSE}
+diamonds_df$cut <- as.factor(diamonds_df$cut)
+(levels(diamonds_df$cut))
+diamonds_df$color <- as.factor(diamonds_df$color)
+(levels(diamonds_df$color))
+diamonds_df$clarity <- as.factor(diamonds_df$clarity)
+(levels(diamonds_df$clarity))
+```
+
+In our data set 'diamonds_df', which is a sample from the 'Diamonds Prices2022' data set which originally contains 53,940 diamonds with 10 variables: cut, color, clarity, carat, depth, table, price, x, y, and z. 
+
+For our sampled data set 'diamonds_df', we have 3 categorical variables: cut, color, and clarity. 'Cut' contains 5 unique factors of the cut quality of the diamond: Fair, Good, Ideal, Premium, and Very Good. Our second categorical variable, 'color', contains 7 unique factors of the color of the diamond: D, E, F, G, H, I, and J. Our third categorical variable, 'clarity' contains 8 unique factors on how clear the diamond is: I1, IF, SI1, SI2, VS1, VS2, VVS1, and VVS2.
+
+Then, the first quantitative variable of our data set, carat, contains the weight of the diamonds. The second quantitative variable, depth, contains the overall depth of the diamonds. The third quantitative variable, table, contains the width of top of diamond relative to widest point of the the diamonds. The fourth quantitative variable, price, contains the prices of each diamond. The fifth quantitative variable, x, contains the length of the diamond in millimeters. The sixth quantitative variable, y, contains the width of the diamond in millimeters. Lastly, The seventh quantitative variable, z, contains the depth of the diamond in millimeters.
+
+To ensure the observational units are independent, we have only gathered a sample of 500 diamonds from the 'Diamonds Prices2022' data set. Furthermore, we will only study 2 categorical variables: cut and color. As well, we will only study 3 independent quantities: carat, table, and price, to provide insightful explanation and interpretation of our sample data set. 
+
+
+
+First, we want explore the relationships between our variables: carat, cut, color, table, and price. We want to investigate whether or not there is any correlation between these variables.
+
+```{r, echo=FALSE}
+pairs(~ carat + cut + color + table + price,diamonds_df)
+```
+
+Observing the scatterplots of our chosen variables, there seems to only be a direct relationship between price and carat, therefore there is a correlation. For all other combinations of our chosen variables there seems to be no linear relationship, therefore lacking any correlation.
+
+
+
+
+Let's run a multiple linear regression model using all of our chosen variables and observe the summary statistics.
+
+```{r, echo=FALSE}
+chosen_variable_model <- lm(y ~ carat + cut + color + table + price, diamonds_df)
+summary(chosen_variable_model)
+```
+
+To conclude this section, an interesting occurrence was the great significance and correlation of 'carat' and 'price', which is expected but interesting nonetheless. However, the data is not what I approximately expected, I did not anticipate a lack of linear relationships between the chosen variables. Furthermore, it was surprising to observe that no values of 'color' were significant in the multiple linear regression model.
+
+
+# Simple Linear Regression
+
+
+For a simple linear regression model, let 'carat' be our predictor and 'prices' be our reponse, then our model is:
+$$ Y_{prices}={\beta_0} \ + \ {\beta_1} \textit{carat} \ + \ {\varepsilon}$$
+
+```{r, echo=FALSE}
+slm <- lm(price ~ carat, diamonds_df)
+summary(slm)
+```
+
+From our summary statistics, we notice that the value for $R^2_{adj}$ is 0.8313, which is adjusted for the number of predictors in the model, indicates that approximately 83.13% of total variability in the response variable, 'price', is explained by our simple linear regression model.
+
+Furthermore, from our summary statistics, we are able to test whether if we can drop the predictor $X_1$ 'carat' from the simple linear regression model. Thus our null hypothesis and alternative hypothesis is:
+
+$$\\H_0: {\beta_1}=0 \ \ \ vs.\ \ H_A:{\beta_1} \ne0\\$$
+where the null hypothesis $H_0$ states that the slope of the regression line is ZERO, therefore no significant linear relationship exist between the two variables, price and carat, while the alternative hypothesis $H_A$ states that the slope of the regression line is NOT ZERO, therefore a significant linear relationship exist between the two variables.
+
+The given t-value for our test statistic is:
+$$ \\t_0 = \frac{\hat{\beta}_1-{\beta}_1} {\
+\sqrt{\frac{\hat{\sigma^2}}{s_{xx}}\ }}=49.59$$
+
+From the qt() function we are given our rejection region:
+
+```{r}
+qt(p = (0.05/2), df=498, lower.tail=FALSE)
+```
+
+Then, $$ \\t_0 = 49.59 \  \ > \ \ t_{\frac{0.05}{2},498}=1.964739$$
+thus we reject the null hypothesis. Therefore, we fail to reject $H_0$ and conclude that there exist a significant linear relationship between price and carat, then dropping 'carat' from the simple linear regression model is unecessary.
+
+Equivalently, we can test our hypothesis using a 100(1-${\alpha}$)% Confidence Interval, thus a 95% Confidence Interval would be:
+
+$$
+\hat{\beta}_1 \pm (t_{\frac{0.05}{2},498} \ \sqrt{\frac{\hat{\sigma^2}}{s_{xx}}})
+$$
+```{r, include=FALSE}
+x <- diamonds_df$carat
+y <- diamonds_df$price
+b0 <- summary(slm)$coef[1,1]
+b1  <- summary(slm)$coef[2,1] 
+y_hat <- b0 + b1*x
+e <- y - y_hat 
+x_bar <- mean(x)
+
+sigma_2_hat <- sum(e^2) / (500-2)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_b1 <-  sqrt(sigma_2_hat/Sxx)
+rr <- qt(p = (0.05/2), df=498, lower.tail=FALSE)
+c(b1 - rr*se_b1, b1 + rr*se_b1)
+```
+
+Plugging in the values we get:
+$$ 7535.1 \ \pm\ (1.964739 \  {{\sqrt{\frac{2546640.72}{110.3009}}}})$$
+Ultimately, we obtain the 95% C.I. $(7236.594, 7833.669)$. Since our 95% C.I. does not contain 0 we reject $H_0$. Therefore, our 95% confidence C.I. suggests that with 95% confidence the true slope of the regression line is contained within the interval $(7236.594, 7833.669)$.
+
+Our summary statistics also allows us to form a prediction interval for our response value 'price'. Assume we want to predict the price of a diamond that contains a value of $x_0 = 2$ carats, such that our prediction interval is:
+
+$$
+\hat{y}_0 \pm t_{\alpha / 2, n-2} \ \sqrt{\hat{\sigma}^2 \times\left(1
++\frac{1}{n}+\frac{\left(x_0-\bar{x}\right)^2}{\sum\left(x_i-\bar{x}\right)^2}\right)}
+$$
+```{r, include=FALSE}
+spe_2 =  sqrt(sigma_2_hat*(1 + (1/500) + ((2 - x_bar)^2)/Sxx))
+yhat_2 =  b0 + b1*2
+c(yhat_2 - rr*spe_2, yhat_2 + rr*spe_2)
+```
+
+Then plugging in the values for our prediction interval we obtain the interval $(8772.563, 17118.108)$, which suggests at the point $x_0=2$, or a diamond that contains 2 carats, the response, price, of the diamond is within the interval $(8772.563, 17118.108)$.
+
+
+
+Next, we will test the assumptions for simple linear regression by interpreting Residuals vs Fitted plot, Normal Q-Q plot, and Scale-Location plot for our mode, the assumptions being:
+
+1. ${\mathbb{E}[\varepsilon}]=0$ 
+
+2. $Var({\varepsilon})={\sigma^2}$, where ${\sigma^2}$ is constant 
+
+3. ${\varepsilon}$ is an independent and identically distributed random variable
+
+4. ${\varepsilon}$ is normally distributed
+
+We can test these assumptions using the plot() function in R.
+
+```{r, echo=FALSE}
+par(mfrow = c(1,3))
+plot(slm, which = c(1,2,3))
+```
+
+From the Residuals vs Fitted plot, the curvature of the red line along with the increasing trend of the residuals suggests a non-constant variance behavior. Furthermore, the Residuals vs Fitted plot suggests that we might have an outlier in our simple linear regression model.
+
+From the Normal Q-Q plot, the points in the right tail are far away from the line, while most points in the left tail values fine. However, the Normal Q-Q plot also suggests that we might have an outlier in our simple linear regression model, as it is far away from all other points in the left tail.
+
+From the Scale-Location plot, as fitted value increases the squared standard residuals, has an increasing trend, again suggesting a non-constant variance behavior. 
+
+To better meet the assumptions we will apply logarithmic transformations to both the response variable 'prices'
+and the predictor 'carat'.
+
+```{r, echo=FALSE}
+trans_slm <- lm(log(price) ~ log(carat), diamonds_df)
+par(mfrow = c(1,3))
+plot(trans_slm, which = c(1,2,3))
+```
+
+From the Residuals vs Fitted plot, the behavior of the line has improved significantly from the logarithmic transformations suggesting constant variance. Additionally, the residuals no longer have an increasing which suggests a constant variance behavior.
+
+From the Normal Q-Q plot, the points in the right tail and left tail have improved from the logarithmic transformations as they are closer packed on the line. Furthermore, from the Normal Q-Q plot we see that the outlier has significantly been dealt with.
+
+From the Scale-Location plot, we see that the behavior of the line has also improved significantly from the logarithmic transformations suggesting constant variance.
+
+By applying logarithmic transformations to both the response variable 'prices' and the predictor 'carat' we are able to greater meet the assumptions of simple linear regression, compared to our original model.
+```{r, echo=FALSE}
+summary(trans_slm)
+```
+From the summary statistics of our logarithmic transformation model, we first notice that the p-value is the same compared to our original simple linear regression model. Secondly, the values for the ${\hat{\beta_0}}$, ${\hat{\beta_1}}$, standard error, t values, and residual standard error have significantly decreased. However, we are able to further confirm the improved behavior of the logarithmic transformation to both the response variable 'prices' and the predictor 'carat' through the value of $R^2_{adj}$. In our original model, the value of $R^2_{adj}$ is 0.8313 and for our logarithmic transformation model the value of $R^2_{adj}$ is 0.9314 which indicates a better linear relationship for'price' and 'carats'.
+
+We will begin to explore a multiple linear regression model for our data set 'diamonds_df' by adding the rest of our chosen categorical and quantitative variables.
+
+```{r, include=FALSE}
+cutmodel <- lm(price ~ carat + cut, data = diamonds_df)
+summary(cutmodel)
+colormodel <- lm(price ~ carat + color, data = diamonds_df)
+summary(colormodel)
+tablemodel <- lm(price ~ carat + table, data = diamonds_df)
+summary(tablemodel)
+
+plot(diamonds_df$carat, diamonds_df$table)
+```
+
+In R, we added 'cut', 'color', 'depth', and 'table' to our simple linear regression model and assessed if our model improved by comparing values of $R^2_{adj}$. First, when we added 'cut' to our simple linear regression model, we noticed the value of ${\hat{\beta_0}}$ decreased, the value of ${\hat{\beta_1}}$ increased, and the value of residual standard error decreased. We also noticed that 'carat' remained significant, while 'cutIdeal' was the only significant value for 'cut'. Finally, we obtained the value of 0.8389 for $R^2_{adj}$, which is greater than 0.8313, which is the $R^2_{adj}$ value for our original simple linear regression model, therefore, we include it in our model. 
+
+Secondly, when we added 'color' to our simple linear regression model, we noticed the value of ${\hat{\beta_0}}$ increased, the value of ${\hat{\beta_1}}$ increased, and the value of residual standard error decreased. We also noticed that 'carat' remained significant and multiple values for 'color' were significant. Finally, we obtained the value of 0.8464 for $R^2_{adj}$, which is greater than 0.8313, which is the $R^2_{adj}$ value for our original simple linear regression model, therefore, we include it in our model.
+
+Lastly, when we added 'table' to our simple linear regression model, we noticed the value of ${\hat{\beta_0}}$ increased, the value of ${\hat{\beta_1}}$ increased, and the value of residual standard error increased. We also noticed that 'carat' remained significant and 'table' was significant. Finally, we obtained the value of 0.8328 for $R^2_{adj}$, which is slightly greater than 0.8313, which is the $R^2_{adj}$ value for our original simple linear regression model, therefore, we include it in our model.
+
+Therefore, we add all of our remaining chosen variables and obtain our Multiple Linear Regression model:
+
+$$ Y_{prices}={\beta_0} \ + \ {\beta_1} \textit{carat} \ + \  {\beta_2} \textit{cut} \ + \ {\beta_3} \textit{color} \ + \ {\beta_4} \textit{table} \ + \ {\varepsilon}$$
+
+To conclude, for the variables we have chosen for our report we notice that there is no multicollinearity or collinearity in our multiple linear regression model. However, there seems to be overfitting when including table within the model. We will explore this issue in the next section. Something that was interesting to observe during this section was the value of $R_2$ for our simple linear regression model, which measures the goodness of fit in a regression model, was only 0.8316. In the last section, we observed that 'price' and 'carat' were correlated, therefore we had a strong assumption that the value of $R_2$ would be relatively close to 1.000, at minimum be 0.900, but that was not the result.
+
+
+# Multiple Linear Regression
+
+
+Using the multiple linear regression model we obtained in the last section we will observe and interpret the summary statistics.
+
+```{r, echo=FALSE}
+mlr <- lm(price ~ carat + table + cut + color, diamonds_df)
+summary(mlr)
+```
+Comparing our multiple linear regression model to our simple linear regression model, we noticed the value of ${\hat{\beta_0}}$ decreased decreased while the value of ${\hat{\beta_1}}$ increased, and the value of residual standard error decreased. Furthermore, we also noticed that 'carat' remained significant, while 'cutIdeal', 'colorH', 'colorI', and 'colorJ' are aslo significant. Importantly, we obtained the value of 0.8543 for $R^2_{adj}$, which is greater than 0.8313, which is the $R^2_{adj}$ value for our original simple linear regression model, therefore, indicating a better model fit.
+
+
+Using the  multiple linear regression model we will use the stepwise regression using AIC to find the best model for our data set.
+
+```{r, echo=FALSE}
+step(colormodel, direction = "both", scope = formula(mlr))
+```
+The Stepwise Regression using AIC indicates that the best model is:
+$$ Y_{prices}={\beta_0} \ + \ {\beta_1} \textit{carat} \ + \  {\beta_2} \textit{color} \ + \ {\beta_3} \textit{cut} \ + \ {\varepsilon}$$
+
+The best model using the stepwise regression is determined by the AIC score, the model with the lowest AIC score is the best model. We notice that the original multiple regression model found in the previous section, which includes the variable 'table', had a slightly higher AIC score than the best model, which confirms from the conclusions in the previous that there seemed to be overfitting. Therefore, our best model only includes the variables: 'carat', 'color', and 'cut'.
+
+Let's develop confidence intervals (CIs) for the mean predicted value and prediction intervals (PIs) of a future predicted value when $x_0=1$.
+
+However, before we begin if we look back at all our summary statistics thus far in the report, the factor 'cutFair' for the 'cut' variable and and factor 'colorD' for the 'color' variable have been excluded from our summary statistics. This is due to R choosing a default reference level for categorical variables. Then, we have to investigate whether or not our summary statistics for our model changes if we include 'cutFair' or 'colorD' in our summary statistics.
+
+```{r, include=FALSE}
+bestmodel <- lm(price ~ carat + cut + color , diamonds_df)
+
+cutFair_RefLevel <- coef(bestmodel)[1]
+cutGood_included1 <- coef(bestmodel)[1] + coef(bestmodel)[3]
+cutIdeal_included1 <- coef(bestmodel)[1] + coef(bestmodel)[4]
+cutPremium_included1 <- coef(bestmodel)[1] + coef(bestmodel)[5]
+cutVeryGood_NotRefLevel <- coef(bestmodel)[1] + coef(bestmodel)[6]
+
+colorD_RefLevel<- coef(bestmodel)[1] 
+colorE_included1 <- coef(bestmodel)[1] + coef(bestmodel)[7]
+colorF_included1 <- coef(bestmodel)[1] + coef(bestmodel)[8]
+colorG_included1 <- coef(bestmodel)[1] + coef(bestmodel)[9]
+colorH_included1 <- coef(bestmodel)[1] + coef(bestmodel)[10]
+colorI_included1 <- coef(bestmodel)[1] + coef(bestmodel)[11]
+colorJ_NotRefLevel <- coef(bestmodel)[1] + coef(bestmodel)[12]
+```
+
+Let ' cutVeryGood' be the reference level for the variable 'cut' to include 'cutFair' in our summary statistics:
+```{r, include=FALSE}
+diamonds_df$cutFair = ifelse(as.character(diamonds_df$cut) == 'Fair', 1, 0)
+diamonds_df$cutIdeal = ifelse(as.character(diamonds_df$cut) == 'Ideal', 1, 0)
+diamonds_df$cutPremium = ifelse(as.character(diamonds_df$cut) == 'Premium', 1, 0)
+diamonds_df$cutGood = ifelse(as.character(diamonds_df$cut) == 'Good', 1, 0)
+
+dpm_cut <- lm(price ~ carat + color + 
+             cutFair + cutGood + cutIdeal + cutPremium, diamonds_df)
+summary(dpm_cut)
+
+cutFair_NotRefLevel <- coef(dpm_cut)[1] + coef(dpm_cut)[9]
+cutGood_included2 <- coef(dpm_cut)[1] + coef(dpm_cut)[10]
+cutIdeal_included2 <- coef(dpm_cut)[1] + coef(dpm_cut)[11]
+cutPremium_included2 <- coef(dpm_cut)[1] + coef(dpm_cut)[12]
+cutVeryGood_RefLevel <- coef(dpm_cut)[1]
+```
+
+```{r}
+cutFair_RefLevel;cutFair_NotRefLevel
+cutGood_included1;cutGood_included2
+cutIdeal_included1;cutIdeal_included2
+cutPremium_included1;cutPremium_included2
+cutVeryGood_NotRefLevel;cutVeryGood_RefLevel
+```
+
+Let 'colorJ' be the default reference level for the variable 'color' to include 'colorD' in our summary statistics:
+```{r, include=FALSE}
+diamonds_df$colorD = ifelse(as.character(diamonds_df$color) == 'D', 1, 0)
+diamonds_df$colorE = ifelse(as.character(diamonds_df$color) == 'E', 1, 0)
+diamonds_df$colorF = ifelse(as.character(diamonds_df$color) == 'F', 1, 0)
+diamonds_df$colorG = ifelse(as.character(diamonds_df$color) == 'G', 1, 0)
+diamonds_df$colorH = ifelse(as.character(diamonds_df$color) == 'H', 1, 0)
+diamonds_df$colorI = ifelse(as.character(diamonds_df$color) == 'I', 1, 0)
+
+dpm_color <- lm(price ~ carat + cut + 
+                colorD + colorE + colorF + colorG + 
+                colorH + colorI, diamonds_df)
+summary(dpm_color)
+
+colorD_NotRefLevel <- coef(dpm_color)[1] + coef(dpm_color)[7]
+colorE_included2 <- coef(dpm_color)[1] + coef(dpm_color)[8]
+colorF_included2 <- coef(dpm_color)[1] + coef(dpm_color)[9]
+colorG_included2 <- coef(dpm_color)[1] + coef(dpm_color)[10]
+colorH_included2 <- coef(dpm_color)[1] + coef(dpm_color)[11]
+colorI_included2 <- coef(dpm_color)[1] + coef(dpm_color)[12]
+colorJ_RefLevel <- coef(dpm_color)[1]
+```
+
+```{r}
+colorD_RefLevel;colorD_NotRefLevel
+colorE_included1;colorE_included2
+colorF_included1;colorF_included2
+colorG_included1;colorG_included2
+colorH_included1;colorH_included2
+colorI_included1;colorI_included2
+colorJ_NotRefLevel;colorJ_RefLevel
+```
+
+Since the values of our intercepts are the same, the model is not affected by reference levels, therefore we can let the factor 'cutFair' for the 'cut' variable and and factor 'colorD' for the 'color' variable remain our reference levels for our model. We will now develop our intervals for the mean predicted value and future predicted value,
+
+For CIs for mean predicted value:
+$$
+\mathbb{E} \widehat{(y|x_0)} \pm t_{(\alpha / 2, n-p-1)} \ \sqrt{\hat{\sigma}^2 \times\left(\frac{1}{n}+\frac{\left(x_0-\bar{x}\right)^2}{\sum\left(x_i-\bar{x}\right)^2}\right)}
+$$
+Then our CIs for mean predicted value when $x_0=1$ are,
+```{r, include=FALSE}
+y <- diamonds_df$price
+x <- diamonds_df$carat
+b0 <- summary(bestmodel)$coef[1,1]
+b1  <- summary(bestmodel)$coef[2,1]
+b2 <- summary(bestmodel)$coef[3,1]
+b3  <- summary(bestmodel)$coef[4,1]
+b4 <- summary(bestmodel)$coef[5,1]
+b5  <- summary(bestmodel)$coef[6,1] 
+b6 <- summary(bestmodel)$coef[7,1]
+b7  <- summary(bestmodel)$coef[8,1] 
+b8 <- summary(bestmodel)$coef[9,1]
+b9  <- summary(bestmodel)$coef[10,1] 
+b10 <- summary(bestmodel)$coef[11,1]
+b11  <- summary(bestmodel)$coef[12,1] 
+```
+
+When 'cut' is Good and 'color' is E:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b2*1 + b6*1
+y_hat <- b0 + b1*x + b2*1 + b6*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Good and 'color' is F:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b2*1 + b7*1
+y_hat <- b0 + b1*x + b2*1 + b7*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Good and 'color' is G:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b2*1 + b8*1
+y_hat <- b0 + b1*x + b2*1 + b8*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Good and 'color' is H:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b2*1 + b9*1
+y_hat <- b0 + b1*x + b2*1 + b9*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Good and 'color' is I:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b2*1 + b10*1
+y_hat <- b0 + b1*x + b2*1 + b10*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Good and 'color' is J:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b2*1 + b11*1
+y_hat <- b0 + b1*x + b2*1 + b11*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Ideal and 'color' is E:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b3*1 + b6*1
+y_hat <- b0 + b1*x + b3*1 + b6*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Ideal and 'color' is F:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b3*1 + b7*1
+y_hat <- b0 + b1*x + b3*1 + b7*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Ideal and 'color' is G:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b3*1 + b8*1
+y_hat <- b0 + b1*x + b3*1 + b8*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Ideal and 'color' is H:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b3*1 + b9*1
+y_hat <- b0 + b1*x + b3*1 + b9*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Ideal and 'color' is I:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b3*1 + b10*1
+y_hat <- b0 + b1*x + b3*1 + b10*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Ideal and 'color' is J:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b3*1 + b11*1
+y_hat <- b0 + b1*x + b3*1 + b11*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Premium and 'color' is E:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b4*1 + b6*1
+y_hat <- b0 + b1*x + b4*1 + b6*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Premium and 'color' is F:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b4*1 + b7*1
+y_hat <- b0 + b1*x + b4*1 + b7*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Premium and 'color' is G:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b4*1 + b8*1
+y_hat <- b0 + b1*x + b4*1 + b8*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Premium and 'color' is H:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b4*1 + b9*1
+y_hat <- b0 + b1*x + b4*1 + b9*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Premium and 'color' is I:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b4*1 + b10*1
+y_hat <- b0 + b1*x + b4*1 + b10*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Premium and 'color' is J:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b4*1 + b11*1
+y_hat <- b0 + b1*x + b4*1 + b11*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Very Good and 'color' is E:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b5*1 + b6*1
+y_hat <- b0 + b1*x + b5*1 + b6*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Very Good and 'color' is F:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b5*1 + b7*1
+y_hat <- b0 + b1*x + b5*1 + b7*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Very Good and 'color' is G:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b5*1 + b8*1
+y_hat <- b0 + b1*x + b5*1 + b8*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Very Good and 'color' is H:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b5*1 + b9*1
+y_hat <- b0 + b1*x + b5*1 + b9*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Very Good and 'color' is I:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b5*1 + b10*1
+y_hat <- b0 + b1*x + b5*1 + b10*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Very Good and 'color' is J:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b5*1 + b11*1
+y_hat <- b0 + b1*x + b5*1 + b11*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt((1/500) + (1 - x_bar)^2/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+
+
+For the prediction intervals (PIs) we use the same model as seen in the Simple Linear Regression section.
+
+Then our PIs for a future predicted value when $x_0=1$ are,
+
+When 'cut' is Good and 'color' is E:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b2*1 + b6*1
+y_hat <- b0 + b1*x + b2*1 + b6*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Good and 'color' is F:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b2*1 + b7*1
+y_hat <- b0 + b1*x + b2*1 + b7*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Good and 'color' is G:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b2*1 + b8*1
+y_hat <- b0 + b1*x + b2*1 + b8*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Good and 'color' is H:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b2*1 + b9*1
+y_hat <- b0 + b1*x + b2*1 + b9*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Good and 'color' is I:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b2*1 + b10*1
+y_hat <- b0 + b1*x + b2*1 + b10*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Good and 'color' is J:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b2*1 + b11*1
+y_hat <- b0 + b1*x + b2*1 + b11*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Ideal and 'color' is E:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b3*1 + b6*1
+y_hat <- b0 + b1*x + b3*1 + b6*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Ideal and 'color' is F:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b3*1 + b7*1
+y_hat <- b0 + b1*x + b3*1 + b7*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Ideal and 'color' is G:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b3*1 + b8*1
+y_hat <- b0 + b1*x + b3*1 + b8*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Ideal and 'color' is H:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b3*1 + b9*1
+y_hat <- b0 + b1*x + b3*1 + b9*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Ideal and 'color' is I:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b3*1 + b10*1
+y_hat <- b0 + b1*x + b3*1 + b10*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Ideal and 'color' is J:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b3*1 + b11*1
+y_hat <- b0 + b1*x + b3*1 + b11*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Premium and 'color' is E:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b4*1 + b6*1
+y_hat <- b0 + b1*x + b4*1 + b6*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Premium and 'color' is F:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b4*1 + b7*1
+y_hat <- b0 + b1*x + b4*1 + b7*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Premium and 'color' is G:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b4*1 + b8*1
+y_hat <- b0 + b1*x + b4*1 + b8*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Premium and 'color' is H:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b4*1 + b9*1
+y_hat <- b0 + b1*x + b4*1 + b9*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Premium and 'color' is I:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b4*1 + b10*1
+y_hat <- b0 + b1*x + b4*1 + b10*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Premium and 'color' is J:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b4*1 + b11*1
+y_hat <- b0 + b1*x + b4*1 + b11*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Very Good and 'color' is E:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b5*1 + b6*1
+y_hat <- b0 + b1*x + b5*1 + b6*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Very Good and 'color' is F:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b5*1 + b7*1
+y_hat <- b0 + b1*x + b5*1 + b7*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Very Good and 'color' is G:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b5*1 + b8*1
+y_hat <- b0 + b1*x + b5*1 + b8*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Very Good and 'color' is H:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b5*1 + b9*1
+y_hat <- b0 + b1*x + b5*1 + b9*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Very Good and 'color' is I:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b5*1 + b10*1
+y_hat <- b0 + b1*x + b5*1 + b10*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+When 'cut' is Very Good and 'color' is J:
+```{r, echo=FALSE}
+yhat_1 <- b0 + b1*1 + b5*1 + b11*1
+y_hat <- b0 + b1*x + b5*1 + b11*1
+e <- y - y_hat
+x_bar <- mean(x)
+sigma_2_hat <- sum(e^2) / (488)
+sigma_hat <- sqrt(sigma_2_hat)
+Sxx <- sum((x - x_bar)^2)
+se_1 <- sigma_hat*sqrt(1 + (1/500) + ((1 - x_bar)^2)/Sxx)
+rr <- qt(p = (0.05/2), df=488, lower.tail=FALSE)
+c(yhat_1 - rr*se_1, yhat_1 + rr*se_1)
+```
+
+
+To conclude this report, we initially explored and interpreted our data set. Furthermore, we explored the relationships between our 5 chosen variables: carat, color, cut, table, and price, discovering that 'price' and 'carat' are correlated. Then, we developed a simple linear regression model by designating 'price' as our response variable and 'carat' as our predictor. We examine the summary statistics, interpreting everything from hypothesis testing to prediction interval at the point $x_0=2$, or a diamond that contains 2 carats. We tested the assumptions of a simple linear regression for our model and we discovered non-constant variance behavior in our plots. Thus, we performed logarithmic transformations on both our response and predictor better met the assumptions compared to our original model. We then added the remaining of our chosen variables to our model and developed a multiple linear regression model. Lastly, we found the best model for our multiple linear regression by stepwise regression using AIC, which contains the response variable 'price' and the predictors: 'carat', 'cut', and 'color'. We developed CIs for a mean predicted value and the PIs of a future predicted value at $x_0=1$ for our best model. To this end, in our summary statistics for our best model, we conclude that the intercept is significant, 'carat' is significant, 'cut' is significant when ideal, 'color' is significant when H, I, or J. The value for $R^2$ is 0.8578, which is adjusted for the number of predictors in the model, indicates that approximately 85.78% of total variability in the response variable, 'price', is explained by our best model. Ultimately, within the variables we chose for our sampled data set 'diamonds_df', the price of diamonds is best captured when factoring the carat, cut, and color of the diamond for a linear regression model.
